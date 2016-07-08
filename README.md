@@ -1,0 +1,2 @@
+# SSPCA
+Supervised Sparse PCA

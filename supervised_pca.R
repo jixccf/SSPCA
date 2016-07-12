@@ -36,8 +36,9 @@ supervised.pca <- function(X, Y,
     
     H <- diag(1, n.row, n.row) - matrix(1, nrow = n.row, ncol = n.row) / n.row
     eigen <- eigen(t(X.adj) %*% H %*% L %*% H %*% X.adj, symmetric = TRUE)
-    sdev <- eigen$values/sqrt(max(1, n.row - 1))
-    components <- eigen$vectors
+    values <- eigen$values[eigen$values > .Machine$double.eps]
+    components <- eigen$vectors[, eigen$values > .Machine$double.eps]
+    sdev <- sqrt(values/max(1, n.row - 1))
     dimnames(components) <- list(colnames(X.adj), paste0("PC", seq_len(ncol(components))))
     pca <- list(components = components, sdev = sdev, center = center)
     class(pca) <- "spca"
@@ -98,8 +99,8 @@ transform.supervised.pca <- function(object, Xnew, n.components) {
     if (ncol(Xnew)!=length(object$center)) {
         stop("data should have the same number of features as the training data")
     }
-    if (n.components <= 1 || n.components > length(object$center))
-        stop(paste("n.components must be between 1 and the number of features", length(object$center)))
+    if (n.components <= 1 || n.components > length(object$sdev))
+        stop(paste("n.components must be between 1 and the number of features", length(object$sdev)))
     n.row <- nrow(Xnew)
     n.col <- ncol(Xnew)
     Xnew.adj <- Xnew - rep(object$center, rep.int(n.row, n.col))

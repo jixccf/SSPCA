@@ -52,14 +52,19 @@ supervised.kernel.pca <- function(X, Y,
     } else if (kernel.y == "precomputed") {
         L <- Y
     }
-    
+    K <- K@.Data
     n.row <- nrow(K)
-    H <- diag(1, n.row, n.row) - matrix(1, nrow = n.row, ncol = n.row) / n.row
     # decomposition of KHLHL
-    eigen <- geigen(K %*% H %*% L %*% H %*% K, K)
-    browser()
-    values <- eigen$values[zapsmall(eigen$values) != 0]
-    components <- matrix(eigen$vectors[, zapsmall(eigen$values) != 0], nrow = n.row)
+    H <- diag(1, n.row, n.row) - matrix(1, nrow = n.row, ncol = n.row) / n.row
+    Q <- K %*% H %*% L %*% H %*% K
+    # browser()
+    eigen <- geigen:::geigen.dggev(Q, K)
+    values <- eigen$values[rowSums(cbind(eigen$beta!=0, zapsmall(Im(eigen$values)) == 0), na.rm=T) > 1]
+    components <- eigen$vectors[, rowSums(cbind(eigen$beta!=0, zapsmall(Im(eigen$values)) == 0), na.rm=T) > 1]
+    components <- components[, Re(values) > 0]
+    values <- Re(values[Re(values) > 0])
+    components <- components[, order(values, decreasing = TRUE)]
+    values <- sort(values, decreasing = TRUE)
     dimnames(components) <- list(colnames(K), 
                                  paste0("PC", seq_len(ncol(components))))
     pca <- list(components = components, eigenvalues = values, 
